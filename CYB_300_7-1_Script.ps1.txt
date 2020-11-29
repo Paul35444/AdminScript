@@ -1,0 +1,28 @@
+#Rename comp to PStAmour
+Rename-Computer -NewName "PStAmour" -Force
+
+#Change time zone to Mountain Standard Time
+Set-TimeZone -Name "Mountain Standard Time"
+
+#Get list of running services
+Get-Service | Where-Object {$_.Status -eq "Running"}
+	
+#Stop the Print Spooler service
+Stop-Service -Name Spooler -Force
+
+#Set idle lock time for screensaver to 3 mins (180 seconds)
+$value = 180
+$path = ‘HKCU:\Control Panel\Desktop’
+$name = ‘ScreenSaveTimeOut’
+$old_value=(Get-ItemProperty -path $path -name $name).$name
+echo “Old ScreenSaveTimeout: $old_value”
+Set-ItemProperty -Path $path -name $name -value $value
+$new_value=(Get-ItemProperty -path $path -name $name).$name
+echo “New ScreenSaveTimeout: $new_value”
+
+#Send output of 50 first entries in sec event log to "SecurityLog_StAmour.txt"
+Get-EventLog -LogName Security -Newest 50 | Out-File -Filepath .\SecurityLog_StAmour.txt
+
+#Create certificate that expires after 12 months and does not have confirm option
+New-SelfSignedCertificate -Type Custom -Subject "Colorado Office" -KeyAlgorithm SHA256 -KeyLength 1024 
+	-NotAfter (Get-Date).AddMonths(12) -Confirm No
